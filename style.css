@@ -288,3 +288,9 @@ label.lbl{display:block;font-weight:800;margin:14px 0 6px}
 .sw small{color:#fff;font:800 11px 'Nunito',sans-serif}
 .sw.on{box-shadow:0 0 0 3px var(--ink)}
 .jar{font-size:44px;line-height:1;margin-bottom:4px}
+.jicon{border:2px solid var(--line);background:#fff;width:46px;height:46px;border-radius:14px;font-size:24px;cursor:pointer;flex:none;padding:0;position:relative}
+.jicon::after{content:"✎";position:absolute;right:-6px;bottom:-6px;background:var(--accent);color:#fff;font-size:11px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center}
+.jicon.on{border-color:var(--accent);background:var(--accent-soft)}
+.iconpick{padding:10px 0 12px;border-bottom:1px solid var(--line)}
+.iconpick .pickpics{grid-template-columns:repeat(8,1fr)}
+@media (max-width:420px){.iconpick .pickpics{grid-template-columns:repeat(6,1fr)}}

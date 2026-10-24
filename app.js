@@ -460,21 +460,26 @@ function week(){
   draw();
 }
 
+// A grid of pictures to choose from; extra = data attributes saying which job it is for
+const iconGrid = (cur, extra) => `<div class="iconpick"><p class="muted" style="margin:0 0 6px;font-size:15px">Pick a picture:</p><div class="pickpics">${JOB_EMOJI.map(e => `<button class="ipick ${e === cur ? 'on' : ''}" ${extra} data-ico="${e}" aria-label="Picture ${e}">${e}</button>`).join('')}</div></div>`;
+
 // Used by the child ("Change my week") and by a grown-up ("Set up X's week")
 function weekEdit(){
   const gu = curPath === 'gu/week';
   if (!gu && !S.canEdit){ location.hash = '#/week'; return; }
   const back = gu ? `#/gu/kid?k=${S.id}` : '#/week';
   setTop(gu ? `${S.name}'s week` : 'Change my week', back, 'week', !gu);
-  let day = dayIdx(addDays(0));
+  let day = dayIdx(addDays(0)), picking = null;
   const R = S.routine;
   const listEditor = (key, items, placeholder) => `
     <div class="elist" data-list="${key}">
       ${items.map((it, k) => { const dks = schoolList(key) ? DAY_KEYS.slice(0,5) : DAY_KEYS; const none = it.days && !it.days.length;
-        return `<div class="erow"><div class="etext"><span>${esc((it.e ? it.e + ' ' : '') + it.t)}</span>
+        const job = key !== 'school', open = job && picking === key + ':' + k;
+        return `<div class="erow">${job ? `<button class="jicon ${open ? 'on' : ''}" data-list="${key}" data-k="${k}" aria-label="Change picture for ${esc(it.t)}">${it.e || '⭐'}</button>` : ''}<div class="etext"><span>${esc(it.t)}</span>
           <div class="daychips">${dks.map(dk => `<button class="dchip ${onDay(it, dk) ? 'on' : ''}" data-list="${key}" data-k="${k}" data-day="${dk}" aria-label="${DAY_LONG[DAY_KEYS.indexOf(dk)]}">${DAY_LONG[DAY_KEYS.indexOf(dk)].slice(0,2)}</button>`).join('')}</div>
           ${none ? '<small class="warn">Not on any day. Tap a day to turn it on.</small>' : ''}</div>
-          <button class="del" data-list="${key}" data-k="${k}" aria-label="Remove">✕</button></div>`; }).join('')}
+          <button class="del" data-list="${key}" data-k="${k}" aria-label="Remove">✕</button></div>
+          ${open ? iconGrid(it.e, `data-list="${key}" data-k="${k}"`) : ''}`; }).join('')}
       <div class="row"><input id="add-${key}" maxlength="50" placeholder="${placeholder}"><button class="btn addbtn" data-list="${key}" style="flex:none">Add</button></div>
     </div>`;
   const draw = () => {
@@ -565,7 +570,9 @@ function weekEdit(){
       if (all.every(x => days.includes(x))) delete it.days; else it.days = all.filter(x => days.includes(x));
       save(); const y = window.scrollY; draw(); window.scrollTo(0, y);
     });
-    $$('.del').forEach(b => b.onclick = () => { listOf(b.dataset.list).splice(+b.dataset.k, 1); save(); const y = window.scrollY; draw(); window.scrollTo(0, y); });
+    $$('.del').forEach(b => b.onclick = () => { picking = null; listOf(b.dataset.list).splice(+b.dataset.k, 1); save(); const y = window.scrollY; draw(); window.scrollTo(0, y); });
+    $$('.jicon').forEach(b => b.onclick = () => { const id = b.dataset.list + ':' + b.dataset.k; picking = picking === id ? null : id; const y = window.scrollY; draw(); window.scrollTo(0, y); });
+    $$('.ipick').forEach(b => b.onclick = () => { listOf(b.dataset.list)[+b.dataset.k].e = b.dataset.ico; picking = null; save(); const y = window.scrollY; draw(); window.scrollTo(0, y); });
     $$('.addbtn').forEach(b => b.onclick = () => {
       const key = b.dataset.list, inp = $('#add-' + key), v = inp.value.trim();
       if (!v) return;
@@ -890,6 +897,7 @@ function moneyParent(params){
   const payOpts = (sel, steps = PAY_STEPS) => steps.map(v => `<option value="${v}" ${Math.abs(v - sel) < 0.001 ? 'selected' : ''}>${v ? fmtMoney(v) : 'Nothing'}</option>`).join('');
   const chosen = new Set(M().gigs.map(g => g.t));
   const nm = esc(S.name);
+  let gpick = null;
   const draw = () => {
     const days = daysToCheck(), a = M().allow, c = colourOf(S);
     view(`
@@ -930,9 +938,9 @@ function moneyParent(params){
 
       <div class="card">
         <h3>⭐ ${nm}'s bonus jobs</h3>
-        ${M().gigs.map((g, k) => `<div class="erow" style="align-items:center"><span style="flex:1;min-width:0">${g.e} ${esc(g.t)}</span>
+        ${M().gigs.map((g, k) => `<div class="erow" style="align-items:center"><button class="jicon ${gpick === k ? 'on' : ''}" data-gi="${k}" aria-label="Change picture for ${esc(g.t)}">${g.e}</button><span style="flex:1;min-width:0">${esc(g.t)}</span>
           <input class="payin" type="number" inputmode="decimal" min="0" step="0.05" value="${g.pay.toFixed(2)}" data-k="${k}" aria-label="Pay">
-          <button class="del" data-gk="${k}" aria-label="Remove">✕</button></div>`).join('') || '<p class="muted">None chosen yet. Add some below.</p>'}
+          <button class="del" data-gk="${k}" aria-label="Remove">✕</button></div>${gpick === k ? iconGrid(g.e, `data-gi="${k}"`) : ''}`).join('') || '<p class="muted">None chosen yet. Add some below.</p>'}
         ${F.kids.length > 1 && M().gigs.length ? `<button class="btn ghost block" id="copygigs" style="margin-top:12px">Copy these to ${F.kids.length > 2 ? 'the other children' : esc(F.kids.find(x => x !== S).name)}</button>` : ''}
         <p class="grp" style="margin-top:14px">Add your own</p>
         <div class="row"><input id="gt" maxlength="50" placeholder="e.g. Clean the guinea pig hutch" style="flex:1;min-width:0"><input id="gp" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="0.50" aria-label="Pay"></div>
@@ -999,7 +1007,9 @@ function moneyParent(params){
     $('#bonus').onchange = e => { M().dayBonus = +e.target.value; save(); draw(); };
     $('#canedit').onchange = e => { S.canEdit = e.target.checked; save(); };
     $$('.payin[data-k]').forEach(i => i.onchange = () => { const v = Math.max(0, +i.value || 0); M().gigs[+i.dataset.k].pay = Math.round(v * 100) / 100; save(); });
-    $$('[data-gk]').forEach(b => b.onclick = () => { chosen.delete(M().gigs[+b.dataset.gk].t); M().gigs.splice(+b.dataset.gk, 1); save(); const y = scrollY; draw(); scrollTo(0, y); });
+    $$('.jicon[data-gi]').forEach(b => b.onclick = () => { gpick = gpick === +b.dataset.gi ? null : +b.dataset.gi; const y = scrollY; draw(); scrollTo(0, y); });
+    $$('.ipick[data-gi]').forEach(b => b.onclick = () => { M().gigs[+b.dataset.gi].e = b.dataset.ico; gpick = null; save(); const y = scrollY; draw(); scrollTo(0, y); });
+    $$('[data-gk]').forEach(b => b.onclick = () => { gpick = null; chosen.delete(M().gigs[+b.dataset.gk].t); M().gigs.splice(+b.dataset.gk, 1); save(); const y = scrollY; draw(); scrollTo(0, y); });
     if ($('#copygigs')) $('#copygigs').onclick = () => {
       let n = 0;
       F.kids.filter(x => x !== S).forEach(x => M().gigs.forEach(g => { if (!x.money.gigs.some(y => y.t === g.t)){ x.money.gigs.push({ ...g, id: uid() }); n++; } }));

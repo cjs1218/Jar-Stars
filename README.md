@@ -22,8 +22,8 @@ No accounts, no messaging, no tracking. Everything is saved only in the browser 
 
 - **Check jobs:** untick anything not really done, then approve to add it to that child's jar
 - **Pay:** each child has their own weekly pocket money (paid automatically on the day you choose), pay per daily job and an all-done bonus, so older children can earn more
-- **Bonus jobs:** choose from 61 ideas or add your own, set the price, and copy them to the other children
-- **Their week:** set up their jobs, clubs and packing list, and choose whether they can change it themselves
+- **Bonus jobs:** choose from 61 ideas or add your own, set the price and picture, and copy them to the other children
+- **Their week:** set up their jobs (tap a job's picture to change it), clubs and packing list, and choose whether they can change it themselves
 - **Money in and out:** record money paid out or added
 - **Family settings:** currency (£, €, $), change PIN, add or remove children, reset everything
 

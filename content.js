@@ -188,6 +188,9 @@ const JOB_PARTS = [
 // Pictures to choose from for "My own club"
 const OWN_EMOJI = ['⭐','🏃','🚴','🌳','🏞️','🐕','🧗','🎳','🏓','🏐','⛳','🏄','🎣','🎮','🧶','🎸','🥁','🎺','🪴','🐾','🧪','🔭','🏕️','🎬','🧁','🛝','👫','📝','🧩','🫶'];
 
+// Pictures a grown-up or child can pick for a job
+const JOB_EMOJI = ['⭐','🛏️','👕','🧦','🪥','🪮','🚿','🛁','🧼','🍽️','🥣','🥪','🎒','📖','✏️','📚','🧺','🧹','🧽','🗑️','♻️','🪴','🌱','🐕','🐈','🐟','🐹','🥕','🧸','🧩','🎹','🎻','⚽','👟','🧥','🚗','🛒','📞','💊','⏰','🌙','☀️','🏠','💪','🫶','🎨'];
+
 /* ---------- Pocket money ---------- */
 // Suggested bonus jobs ("gigs") a grown-up can choose from. Prices are only suggestions.
 const GIG_SUGGESTIONS = [
