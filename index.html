@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jar Stars</title>
+  <meta name="description" content="Pocket money, jobs and savings for brothers and sisters, on one family tablet.">
+  <meta name="theme-color" content="#f6f8ff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="t-home">
+  <header id="topbar">
+    <button id="back" class="back" aria-label="Back" hidden>←</button>
+    <div id="title" class="title"></div>
+    <a id="starbox" class="stars" href="#/pet" aria-label="My stars and pet" hidden>⭐ <span id="starcount">0</span></a>
+    <a id="who" class="whobtn" href="#/who" aria-label="Switch to someone else" hidden></a>
+  </header>
+  <main id="app"></main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="content.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Jar Stars",
+  "short_name": "Jar Stars",
+  "description": "Pocket money, jobs and savings for brothers and sisters, on one family tablet.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f8ff",
+  "theme_color": "#f6f8ff",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
