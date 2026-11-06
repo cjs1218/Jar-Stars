@@ -294,3 +294,11 @@ label.lbl{display:block;font-weight:800;margin:14px 0 6px}
 .iconpick{padding:10px 0 12px;border-bottom:1px solid var(--line)}
 .iconpick .pickpics{grid-template-columns:repeat(8,1fr)}
 @media (max-width:420px){.iconpick .pickpics{grid-template-columns:repeat(6,1fr)}}
+
+/* Big furniture the pet can sit on */
+.room{container-type:inline-size}
+.room .seat{font-size:clamp(104px,34vw,158px);font-size:37cqw;cursor:pointer;z-index:1}
+.room .seat.taken{filter:drop-shadow(0 0 6px rgba(255,255,255,.9))}
+.petwrap{z-index:2}
+.petwrap.sitting{font-size:clamp(62px,20vw,90px);font-size:22cqw}
+.homelabel{z-index:3;bottom:auto;top:8px;left:8px}

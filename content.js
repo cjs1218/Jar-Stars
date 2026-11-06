@@ -53,26 +53,27 @@ const HOMES = [
   { id:'castle',    e:'🏰', name:'Castle',         cost:30, wall:'#ece4ff', floor:'#c6b6e6' }
 ];
 
-// x / y are % positions in the room
+// x / y are % positions in the room.
+// seat: the pet can sit on it (tap it in the room). sx / sy = where the pet sits.
 const FURNITURE = [
-  { id:'plant',   e:'🪴', name:'Plant',         cost:4,  x:9,  y:58 },
+  { id:'plant',   e:'🪴', name:'Plant',         cost:4,  x:8,  y:44 },
   { id:'picture', e:'🖼️', name:'Picture',       cost:5,  x:28, y:22 },
-  { id:'clock',   e:'🕰️', name:'Clock',         cost:5,  x:12, y:20 },
+  { id:'clock',   e:'🕰️', name:'Clock',         cost:5,  x:12, y:24 },
   { id:'window',  e:'🪟', name:'Window',        cost:4,  x:50, y:24 },
   { id:'lights',  e:'✨', name:'Fairy lights',  cost:6,  x:50, y:7 },
   { id:'rainbow', e:'🌈', name:'Rainbow',       cost:8,  x:76, y:22 },
   { id:'books',   e:'📚', name:'Bookshelf',     cost:6,  x:91, y:52 },
-  { id:'sofa',    e:'🛋️', name:'Sofa',          cost:10, x:18, y:80 },
-  { id:'bed',     e:'🛏️', name:'Comfy bed',     cost:8,  x:80, y:82 },
-  { id:'flowers', e:'💐', name:'Flowers',       cost:4,  x:94, y:76 },
+  { id:'sofa',    e:'🛋️', name:'Sofa',          cost:10, x:25, y:76, seat:true, sx:25, sy:63, say:'Ahh, this sofa is SO comfy! 😌' },
+  { id:'bed',     e:'🛏️', name:'Comfy bed',     cost:8,  x:76, y:79, seat:true, sx:80, sy:75, say:'Time for a little snooze… 😴' },
+  { id:'flowers', e:'💐', name:'Flowers',       cost:4,  x:95, y:40 },
   { id:'balloon', e:'🎈', name:'Balloon',       cost:3,  x:66, y:12 }
 ];
 
 const TOYS = [
-  { id:'ball',  e:'⚽', name:'Ball',       cost:3, x:38, y:90, say:'Wheee! Kick it to me!' },
-  { id:'yarn',  e:'🧶', name:'Wool ball',  cost:3, x:60, y:91, say:'Ooh, so bouncy and tangly!' },
-  { id:'teddy', e:'🧸', name:'Teddy',      cost:5, x:32, y:66, say:'Teddy cuddles are the best!' },
-  { id:'yoyo',  e:'🪀', name:'Yo-yo',      cost:4, x:67, y:70, say:'Up and down, up and down!' },
+  { id:'ball',  e:'⚽', name:'Ball',       cost:3, x:50, y:92, say:'Wheee! Kick it to me!' },
+  { id:'yarn',  e:'🧶', name:'Wool ball',  cost:3, x:49, y:78, say:'Ooh, so bouncy and tangly!' },
+  { id:'teddy', e:'🧸', name:'Teddy',      cost:5, x:36, y:46, say:'Teddy cuddles are the best!' },
+  { id:'yoyo',  e:'🪀', name:'Yo-yo',      cost:4, x:66, y:44, say:'Up and down, up and down!' },
   { id:'kite',  e:'🪁', name:'Kite',       cost:6, x:86, y:10, say:'Let\'s fly it really high!' }
 ];
 

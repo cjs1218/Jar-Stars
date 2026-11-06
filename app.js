@@ -18,7 +18,7 @@ const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: r
 /* ---------- Family and children ---------- */
 // F = the whole family (shared PIN, currency, children). S = the child whose jar is open.
 const MONEY_DEFAULT = () => ({ rate:0.10, dayBonus:0.20, allow:{ amt:0, day:'sat', last:'' }, gigs:[], ledger:[], reviewed:{}, gigLog:[], goals:[], wishes:[] });
-const KID_DEFAULT = () => ({ stars:0, earned:{}, spent:0, pet:null, owned:[], food:{}, home:'box', wear:null,
+const KID_DEFAULT = () => ({ stars:0, earned:{}, spent:0, pet:null, owned:[], food:{}, home:'box', wear:null, sit:null,
   routine: clone(ROUTINE_DEFAULT), ticks:{}, noSchool:{}, canEdit:true, money: MONEY_DEFAULT() });
 
 function loadFamily(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } }
@@ -243,18 +243,22 @@ function petRoom(){
   const fedToday = S.pet.fed === dkey();
   const say = !fedToday ? `Hi ${S.name}! I'm a little bit peckish… 🍽️` : `Hi ${S.name}! I'm so happy you came!`;
   const acc = ACCESSORIES.find(a => a.id === S.wear);
+  const seat = S.sit && S.owned.includes(S.sit) ? FURNITURE.find(f => f.id === S.sit) : null;
+  const seats = FURNITURE.filter(f => f.seat && S.owned.includes(f.id));
   view(`
     <div class="bubble" id="say">${esc(say)}</div>
     <div class="room" style="--wall:${home.wall};--floor:${home.floor}">
-      ${FURNITURE.filter(f => S.owned.includes(f.id)).map(f => `<span class="it" style="left:${f.x}%;top:${f.y}%">${f.e}</span>`).join('')}
+      ${FURNITURE.filter(f => S.owned.includes(f.id)).map(f => f.seat
+        ? `<button class="it seat ${S.sit === f.id ? 'taken' : ''}" data-seat="${f.id}" style="left:${f.x}%;top:${f.y}%" aria-label="${S.sit === f.id ? 'Get off' : 'Sit on'} the ${f.name.toLowerCase()}">${f.e}</button>`
+        : `<span class="it" style="left:${f.x}%;top:${f.y}%">${f.e}</span>`).join('')}
       ${TOYS.filter(f => S.owned.includes(f.id)).map(f => `<button class="it toy" data-id="${f.id}" style="left:${f.x}%;top:${f.y}%" aria-label="Play with ${f.name}">${f.e}</button>`).join('')}
-      <button class="petwrap" id="pet" aria-label="Stroke ${esc(S.pet.name)}"><span class="pet">${t.e}</span>${acc ? `<span class="acc ${acc.where}">${acc.e}</span>` : ''}</button>
+      <button class="petwrap ${seat ? 'sitting' : ''}" id="pet" ${seat ? `style="left:${seat.sx}%;top:${seat.sy}%"` : ''} aria-label="Stroke ${esc(S.pet.name)}"><span class="pet">${t.e}</span>${acc ? `<span class="acc ${acc.where}">${acc.e}</span>` : ''}</button>
       <span class="homelabel">${home.e} ${home.name}</span>
     </div>
     <div class="tray" id="tray">
       ${FOOD.filter(f => S.food[f.id] > 0).map(f => `<button class="food" data-id="${f.id}" aria-label="Feed ${f.name}">${f.e}<b>${S.food[f.id]}</b></button>`).join('') || '<span class="muted">No food yet. Buy some in the shop!</span>'}
     </div>
-    <p class="muted center" style="font-size:15px;margin-top:-4px">Tap ${esc(S.pet.name)} for a cuddle, tap food to feed, tap toys to play.</p>
+    <p class="muted center" style="font-size:15px;margin-top:-4px">Tap ${esc(S.pet.name)} for a cuddle, tap food to feed, tap toys to play${seats.length ? `, tap the ${seats.map(f => f.name.toLowerCase().replace('comfy ', '')).join(' or ')} to sit` : ''}.</p>
     <div class="row"><a class="btn" href="#/pet/shop">🛍️ Shop</a><a class="btn ghost" href="#/week">⭐ Earn stars</a></div>
   `);
   const pw = $('#pet'), bubble = $('#say');
@@ -262,9 +266,16 @@ function petRoom(){
   const jump = () => { pw.classList.remove('jump'); void pw.offsetWidth; pw.classList.add('jump'); };
   const hearts = (n=3, e='💖') => {
     for (let i=0;i<n;i++){ const h = document.createElement('span'); h.className = 'heart'; h.textContent = e;
-      h.style.left = (44 + Math.random()*12) + '%'; h.style.animationDelay = (i*0.15) + 's';
+      h.style.left = ((seat ? seat.sx : 50) - 6 + Math.random()*12) + '%'; if (seat) h.style.top = (seat.sy - 10) + '%'; h.style.animationDelay = (i*0.15) + 's';
       $('.room').appendChild(h); setTimeout(() => h.remove(), 1600); }
   };
+  $$('.seat').forEach(b => b.onclick = () => {
+    const f = FURNITURE.find(x => x.id === b.dataset.seat);
+    const off = S.sit === f.id;
+    S.sit = off ? null : f.id; save();
+    petRoom();
+    $('#say').textContent = off ? 'Wheee, back on the floor!' : f.say;
+  });
   pw.onclick = () => {
     const lines = [...PET_SAYS];
     const g = S.money.goals.find(x => x.saved < x.amt);
