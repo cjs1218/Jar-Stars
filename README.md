@@ -16,7 +16,7 @@ No accounts, no messaging, no tracking. Everything is saved only in the browser 
 |---|---|
 | 📅 **My week and jobs** | Morning, after-school and bedtime jobs to tick off, clubs for each day, and a packing checklist (school bag Mon–Fri plus each club's kit, with tomorrow's bag for packing at bedtime). 1 star per job, bonuses for a packed bag and a finished day |
 | 🫙 **My jar** | Three tabs: **Earned** (totals, pay rules, bonus jobs, history), **Goals** (several savings goals; move money into each) and **Wish list** (how much they want it, a one-week thinking time, save for it or buy it) |
-| 🐾 **My pet** | Spend stars to adopt a pet, then buy homes, furniture, toys, food and dress-up items. No guilt mechanics: the pet never gets ill or leaves |
+| 🐾 **My pet** | Spend stars to adopt a pet, then buy homes, furniture, toys, food and dress-up items. Tap "Move things around" to drag furniture and toys anywhere in the room, and tap the sofa or bed for the pet to sit on it. No guilt mechanics: the pet never gets ill or leaves |
 
 ## Grown-up controls (per child)
 

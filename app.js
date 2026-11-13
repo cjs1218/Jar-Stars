@@ -18,7 +18,7 @@ const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: r
 /* ---------- Family and children ---------- */
 // F = the whole family (shared PIN, currency, children). S = the child whose jar is open.
 const MONEY_DEFAULT = () => ({ rate:0.10, dayBonus:0.20, allow:{ amt:0, day:'sat', last:'' }, gigs:[], ledger:[], reviewed:{}, gigLog:[], goals:[], wishes:[] });
-const KID_DEFAULT = () => ({ stars:0, earned:{}, spent:0, pet:null, owned:[], food:{}, home:'box', wear:null, sit:null,
+const KID_DEFAULT = () => ({ stars:0, earned:{}, spent:0, pet:null, owned:[], food:{}, home:'box', wear:null, sit:null, pos:{},
   routine: clone(ROUTINE_DEFAULT), ticks:{}, noSchool:{}, canEdit:true, money: MONEY_DEFAULT() });
 
 function loadFamily(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } }
@@ -109,6 +109,7 @@ let parentUnlocked = false;
 let curPath = '', curParams = new URLSearchParams();
 function route(){
   stopTimers();
+  if (!location.hash.startsWith('#/pet')) moving = false;
   const h = location.hash.replace(/^#\/?/, '');
   const [path, q] = h.split('?');
   const params = new URLSearchParams(q || '');
@@ -243,15 +244,19 @@ function petRoom(){
   const fedToday = S.pet.fed === dkey();
   const say = !fedToday ? `Hi ${S.name}! I'm a little bit peckish… 🍽️` : `Hi ${S.name}! I'm so happy you came!`;
   const acc = ACCESSORIES.find(a => a.id === S.wear);
-  const seat = S.sit && S.owned.includes(S.sit) ? FURNITURE.find(f => f.id === S.sit) : null;
+  const seatF = S.sit && S.owned.includes(S.sit) ? FURNITURE.find(f => f.id === S.sit) : null;
+  // where the pet sits moves with the sofa or bed
+  const seat = seatF && { sx: posOf(seatF).x + seatF.sx - seatF.x, sy: posOf(seatF).y + seatF.sy - seatF.y };
   const seats = FURNITURE.filter(f => f.seat && S.owned.includes(f.id));
+  const at = f => `left:${posOf(f).x}%;top:${posOf(f).y}%`;
+  const things = [...FURNITURE, ...TOYS].filter(f => S.owned.includes(f.id));
   view(`
-    <div class="bubble" id="say">${esc(say)}</div>
-    <div class="room" style="--wall:${home.wall};--floor:${home.floor}">
+    <div class="bubble" id="say">${moving ? 'Drag things to move them about. Tap Done when you\'ve finished!' : esc(say)}</div>
+    <div class="room ${moving ? 'moving' : ''}" style="--wall:${home.wall};--floor:${home.floor}">
       ${FURNITURE.filter(f => S.owned.includes(f.id)).map(f => f.seat
-        ? `<button class="it seat ${S.sit === f.id ? 'taken' : ''}" data-seat="${f.id}" style="left:${f.x}%;top:${f.y}%" aria-label="${S.sit === f.id ? 'Get off' : 'Sit on'} the ${f.name.toLowerCase()}">${f.e}</button>`
-        : `<span class="it" style="left:${f.x}%;top:${f.y}%">${f.e}</span>`).join('')}
-      ${TOYS.filter(f => S.owned.includes(f.id)).map(f => `<button class="it toy" data-id="${f.id}" style="left:${f.x}%;top:${f.y}%" aria-label="Play with ${f.name}">${f.e}</button>`).join('')}
+        ? `<button class="it seat ${S.sit === f.id ? 'taken' : ''}" data-seat="${f.id}" data-mv="${f.id}" style="${at(f)}" aria-label="${S.sit === f.id ? 'Get off' : 'Sit on'} the ${f.name.toLowerCase()}">${f.e}</button>`
+        : `<span class="it ${f.art ? 'art art-' + f.art : ''}" data-mv="${f.id}" style="${at(f)}">${f.art ? ART[f.art] : f.e}</span>`).join('')}
+      ${TOYS.filter(f => S.owned.includes(f.id)).map(f => `<button class="it toy" data-id="${f.id}" data-mv="${f.id}" style="${at(f)}" aria-label="Play with ${f.name}">${f.e}</button>`).join('')}
       <button class="petwrap ${seat ? 'sitting' : ''}" id="pet" ${seat ? `style="left:${seat.sx}%;top:${seat.sy}%"` : ''} aria-label="Stroke ${esc(S.pet.name)}"><span class="pet">${t.e}</span>${acc ? `<span class="acc ${acc.where}">${acc.e}</span>` : ''}</button>
       <span class="homelabel">${home.e} ${home.name}</span>
     </div>
@@ -259,9 +264,13 @@ function petRoom(){
       ${FOOD.filter(f => S.food[f.id] > 0).map(f => `<button class="food" data-id="${f.id}" aria-label="Feed ${f.name}">${f.e}<b>${S.food[f.id]}</b></button>`).join('') || '<span class="muted">No food yet. Buy some in the shop!</span>'}
     </div>
     <p class="muted center" style="font-size:15px;margin-top:-4px">Tap ${esc(S.pet.name)} for a cuddle, tap food to feed, tap toys to play${seats.length ? `, tap the ${seats.map(f => f.name.toLowerCase().replace('comfy ', '')).join(' or ')} to sit` : ''}.</p>
-    <div class="row"><a class="btn" href="#/pet/shop">🛍️ Shop</a><a class="btn ghost" href="#/week">⭐ Earn stars</a></div>
+    ${moving ? `<div class="row"><button class="btn ghost" id="mvreset">↩️ Put back</button><button class="btn" id="mvdone">✓ Done</button></div>`
+      : `<div class="row"><a class="btn" href="#/pet/shop">🛍️ Shop</a><a class="btn ghost" href="#/week">⭐ Earn stars</a></div>
+    ${things.length ? '<button class="btn ghost block" id="mvgo" style="margin-top:10px">✋ Move things around</button>' : ''}`}
   `);
   const pw = $('#pet'), bubble = $('#say');
+  if ($('#mvgo')) $('#mvgo').onclick = () => { moving = true; petRoom(); };
+  if (moving){ moveMode(); return; }
   const talk = (txt) => { bubble.textContent = txt; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop'); };
   const jump = () => { pw.classList.remove('jump'); void pw.offsetWidth; pw.classList.add('jump'); };
   const hearts = (n=3, e='💖') => {
@@ -296,6 +305,45 @@ function petRoom(){
     talk(fav ? `${f.name}! My FAVOURITE! Thank you! 😋` : `Yum yum, thank you! 😋`); jump(); hearts(fav ? 5 : 2, fav ? '💖' : '😋');
     later(() => { const n = S.food[f.id]; if (n > 0) b.querySelector('b').textContent = n; else b.remove();
       if (!$('#tray .food')) $('#tray').innerHTML = '<span class="muted">All gone! Buy more in the shop.</span>'; }, 300);
+  });
+}
+
+// Where a piece of furniture or toy is (children can move them)
+const posOf = f => (S.pos && S.pos[f.id]) || { x: f.x, y: f.y };
+let moving = false;
+function moveMode(){
+  const room = $('.room');
+  $('#mvdone').onclick = () => { moving = false; petRoom(); toast('Room saved ✨'); };
+  $('#mvreset').onclick = e => {
+    const b = e.currentTarget;
+    if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = 'Tap again'; return; }
+    S.pos = {}; save(); petRoom();
+  };
+  $$('[data-mv]', room).forEach(el => {
+    el.onclick = e => e.preventDefault();
+    el.onpointerdown = e => {
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('dragging');
+      const r = room.getBoundingClientRect(), now = el.getBoundingClientRect();
+      // keep the grab point under the finger
+      const dx = e.clientX - (now.left + now.width / 2), dy = e.clientY - (now.top + now.height / 2);
+      const clamp = v => Math.max(3, Math.min(97, v));
+      let x, y;
+      el.onpointermove = m => {
+        x = clamp((m.clientX - dx - r.left) / r.width * 100);
+        y = clamp((m.clientY - dy - r.top) / r.height * 100);
+        el.style.left = x + '%'; el.style.top = y + '%';
+      };
+      el.onpointerup = el.onpointercancel = () => {
+        el.onpointermove = el.onpointerup = el.onpointercancel = null;
+        el.classList.remove('dragging');
+        if (x === undefined) return;
+        S.pos = S.pos || {};
+        S.pos[el.dataset.mv] = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+        save();
+      };
+    };
   });
 }
 
@@ -336,7 +384,7 @@ function petShop(){
           btn = S.owned.includes(i.id) ? `<button class="buy using" disabled>In the room ✓</button>`
               : `<button class="buy" data-id="${i.id}" ${w < i.cost ? 'disabled' : ''}>Buy ${i.cost} ⭐</button>`;
         }
-        return `<div class="shopitem"><span class="se">${i.e}</span><b>${esc(i.name)}</b>${note}${btn}</div>`;
+        return `<div class="shopitem">${i.art ? `<span class="se seart">${ART[i.art]}</span>` : `<span class="se">${i.e}</span>`}<b>${esc(i.name)}</b>${note}${btn}</div>`;
       }).join('')}</div>
       <a class="btn block" href="#/pet" style="margin-top:8px">Back to ${esc(S.pet.name)}</a>
     `);

@@ -310,3 +310,15 @@ label.lbl{display:block;font-weight:800;margin:14px 0 6px}
 .okind.on{border-color:var(--accent);background:var(--accent-soft)}
 .buyrow .payin{width:84px}
 .entry .ldel{margin-left:8px}
+
+/* Drawn furniture */
+.room .art svg{display:block;width:100%;height:auto}
+.room .art-window{width:40cqw}
+.room .art-bookshelf{width:21cqw}
+/* Moving furniture */
+.room.moving .it{cursor:grab;touch-action:none;animation:wiggle 1.2s ease-in-out infinite;outline:2px dashed rgba(255,255,255,.9);outline-offset:4px;border-radius:10px}
+.room.moving .it.dragging{cursor:grabbing;animation:none;z-index:5;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.room.moving .petwrap{pointer-events:none;opacity:.6}
+@keyframes wiggle{0%,100%{rotate:-2deg}50%{rotate:2deg}}
+@media (prefers-reduced-motion: reduce){.room.moving .it{animation:none}}
+.seart svg{width:52px;height:52px}

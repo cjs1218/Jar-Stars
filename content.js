@@ -53,21 +53,57 @@ const HOMES = [
   { id:'castle',    e:'🏰', name:'Castle',         cost:30, wall:'#ece4ff', floor:'#c6b6e6' }
 ];
 
-// x / y are % positions in the room.
+// x / y are % starting positions in the room (children can move things about).
 // seat: the pet can sit on it (tap it in the room). sx / sy = where the pet sits.
+// art: drawn picture (see ART below) instead of an emoji, for things with no good emoji
 const FURNITURE = [
-  { id:'plant',   e:'🪴', name:'Plant',         cost:4,  x:8,  y:44 },
-  { id:'picture', e:'🖼️', name:'Picture',       cost:5,  x:28, y:22 },
-  { id:'clock',   e:'🕰️', name:'Clock',         cost:5,  x:12, y:24 },
-  { id:'window',  e:'🪟', name:'Window',        cost:4,  x:50, y:24 },
-  { id:'lights',  e:'✨', name:'Fairy lights',  cost:6,  x:50, y:7 },
-  { id:'rainbow', e:'🌈', name:'Rainbow',       cost:8,  x:76, y:22 },
-  { id:'books',   e:'📚', name:'Bookshelf',     cost:6,  x:91, y:52 },
+  { id:'plant',   e:'🪴', name:'Plant',         cost:4,  x:7,  y:47 },
+  { id:'picture', e:'🖼️', name:'Picture',       cost:5,  x:20, y:30 },
+  { id:'clock',   e:'🕰️', name:'Clock',         cost:5,  x:9,  y:17 },
+  { id:'window',  e:'🪟', name:'Window',        cost:4,  x:50, y:27, art:'window' },
+  { id:'lights',  e:'✨', name:'Fairy lights',  cost:6,  x:50, y:6 },
+  { id:'rainbow', e:'🌈', name:'Rainbow',       cost:8,  x:80, y:16 },
+  { id:'books',   e:'📚', name:'Bookshelf',     cost:6,  x:88, y:48, art:'bookshelf' },
   { id:'sofa',    e:'🛋️', name:'Sofa',          cost:10, x:25, y:76, seat:true, sx:25, sy:63, say:'Ahh, this sofa is SO comfy! 😌' },
   { id:'bed',     e:'🛏️', name:'Comfy bed',     cost:8,  x:76, y:79, seat:true, sx:80, sy:75, say:'Time for a little snooze… 😴' },
-  { id:'flowers', e:'💐', name:'Flowers',       cost:4,  x:95, y:40 },
-  { id:'balloon', e:'🎈', name:'Balloon',       cost:3,  x:66, y:12 }
+  { id:'flowers', e:'💐', name:'Flowers',       cost:4,  x:88, y:23 },
+  { id:'balloon', e:'🎈', name:'Balloon',       cost:3,  x:70, y:40 }
 ];
+
+// Hand-drawn pictures for furniture with no good emoji
+const ART = {
+  bookshelf: `<svg viewBox="0 0 100 124" aria-hidden="true">
+    <rect x="4" y="2" width="92" height="120" rx="5" fill="#8a5a33"/>
+    <rect x="11" y="9" width="78" height="106" fill="#5e3b20"/>
+    <g fill="#8a5a33"><rect x="11" y="40" width="78" height="6"/><rect x="11" y="77" width="78" height="6"/></g>
+    <g>
+      <rect x="15" y="15" width="9" height="25" rx="1.5" fill="#e4572e"/><rect x="25" y="19" width="8" height="21" rx="1.5" fill="#f3c13a"/>
+      <rect x="34" y="13" width="10" height="27" rx="1.5" fill="#4f8fe0"/><rect x="45" y="18" width="7" height="22" rx="1.5" fill="#76c06f"/>
+      <rect x="57" y="24" width="10" height="16" rx="1.5" fill="#b07ae0" transform="rotate(-18 62 40)"/>
+      <rect x="70" y="16" width="9" height="24" rx="1.5" fill="#ff8fb1"/><rect x="80" y="20" width="6" height="20" rx="1.5" fill="#29a8a0"/>
+      <rect x="15" y="54" width="8" height="23" rx="1.5" fill="#4f8fe0"/><rect x="24" y="50" width="10" height="27" rx="1.5" fill="#76c06f"/>
+      <rect x="35" y="56" width="7" height="21" rx="1.5" fill="#e4572e"/><rect x="43" y="52" width="9" height="25" rx="1.5" fill="#f3c13a"/>
+      <circle cx="68" cy="68" r="9" fill="#ffd25c"/><rect x="64" y="58" width="8" height="5" rx="2" fill="#2f9e6a"/>
+      <rect x="79" y="53" width="8" height="24" rx="1.5" fill="#b07ae0"/>
+      <rect x="15" y="89" width="22" height="9" rx="1.5" fill="#ff8fb1"/><rect x="15" y="98" width="24" height="9" rx="1.5" fill="#4f8fe0"/><rect x="17" y="107" width="20" height="8" rx="1.5" fill="#f3c13a"/>
+      <rect x="44" y="90" width="9" height="25" rx="1.5" fill="#29a8a0"/><rect x="54" y="93" width="8" height="22" rx="1.5" fill="#e4572e"/>
+      <rect x="63" y="88" width="10" height="27" rx="1.5" fill="#76c06f"/><rect x="74" y="92" width="11" height="23" rx="1.5" fill="#f3c13a"/>
+    </g>
+    <g fill="#fff" opacity=".35"><rect x="17" y="18" width="2" height="18"/><rect x="36" y="16" width="2" height="21"/><rect x="26" y="53" width="2" height="21"/><rect x="65" y="91" width="2" height="21"/></g>
+  </svg>`,
+  window: `<svg viewBox="0 0 140 112" aria-hidden="true">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ec8ff"/><stop offset="1" stop-color="#cdeeff"/></linearGradient></defs>
+    <rect x="14" y="4" width="112" height="98" rx="8" fill="#fff"/>
+    <rect x="21" y="11" width="98" height="84" rx="4" fill="url(#sky)"/>
+    <circle cx="96" cy="32" r="11" fill="#ffd25c"/>
+    <g fill="#fff"><ellipse cx="45" cy="34" rx="15" ry="8"/><ellipse cx="56" cy="29" rx="11" ry="8"/><ellipse cx="80" cy="64" rx="12" ry="6"/></g>
+    <path d="M21 95 Q45 72 70 86 T119 80 V95 Z" fill="#7ccf6b"/>
+    <g fill="#fff"><rect x="67" y="11" width="6" height="84"/><rect x="21" y="50" width="98" height="6"/></g>
+    <rect x="8" y="98" width="124" height="10" rx="4" fill="#e8dccf"/>
+    <path d="M6 2 H34 Q30 40 38 92 Q20 96 6 92 Z" fill="#ff9fb8"/><path d="M134 2 H106 Q110 40 102 92 Q120 96 134 92 Z" fill="#ff9fb8"/>
+    <rect x="2" y="0" width="136" height="6" rx="3" fill="#b07a4a"/>
+  </svg>`
+};
 
 const TOYS = [
   { id:'ball',  e:'⚽', name:'Ball',       cost:3, x:50, y:92, say:'Wheee! Kick it to me!' },
