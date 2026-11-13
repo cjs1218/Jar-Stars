@@ -1,6 +1,8 @@
 /* Jar Stars – pocket money, jobs and savings for brothers and sisters.
-   One shared family device. Everything is saved only in this browser (localStorage).
-   No accounts, no tracking. */
+   Two clients share this file: the children's app (index.html) and the grown-ups' app
+   (grownups.html). Data is saved in this browser and, if family sync is set up, in a
+   private GitHub repo shared by every device (see sync.js). No tracking. */
+const CLIENT = window.CLIENT === 'adults' ? 'adults' : 'kids';
 
 /* ---------- Helpers ---------- */
 const app = document.getElementById('app');
@@ -38,7 +40,10 @@ const colourOf = k => COLOURS.find(c => c.id === k.colour) || COLOURS[0];
 // Run fn with S set to another child, then put S back
 function withKid(k, fn){ const was = S; S = k; try { return fn(); } finally { S = was; } }
 
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(F)); } catch(e){} updateStars(); }
+function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(F)); } catch(e){} }
+function save(){ saveLocal(); updateStars(); Sync.changed(); }
+// What's shared between devices: everything except who is using this device right now
+const shared = () => { const o = clone(F); delete o.current; return o; };
 
 function view(html){ app.innerHTML = `<div class="pop">${html}</div>`; }
 
@@ -99,54 +104,90 @@ function setTop(title, back, theme, kid = true){
 document.getElementById('back').addEventListener('click', () => { if (backTo) location.hash = backTo; });
 
 const routes = {
-  'who': who, 'welcome': welcome, 'home': home,
+  'who': who, 'home': home,
   'week': week, 'week/edit': weekEdit, 'money': money,
   'pet': petRoom, 'pet/adopt': petAdopt, 'pet/shop': petShop,
-  'gu': family, 'gu/kid': moneyParent, 'gu/week': weekEdit, 'gu/child': childForm
+  'gu': family, 'gu/kid': moneyParent, 'gu/week': weekEdit, 'gu/child': childForm,
+  'gu/sync': syncSetup, 'gu/devices': devices
 };
 
-let parentUnlocked = false;
+let parentUnlocked = false, localOnly = false;
 let curPath = '', curParams = new URLSearchParams();
-function route(){
+function route(keepScroll){
   stopTimers();
   if (!location.hash.startsWith('#/pet')) moving = false;
+  if (location.hash.startsWith('#join=')) return joinScreen(location.hash.slice(6));
   const h = location.hash.replace(/^#\/?/, '');
   const [path, q] = h.split('?');
   const params = new URLSearchParams(q || '');
   curPath = path; curParams = params;
-  window.scrollTo(0, 0);
+  if (!keepScroll) window.scrollTo(0, 0);
   F.kids.forEach(runAllowance);
   const grownUp = path === 'gu' || path.startsWith('gu/');
-  // Leaving the grown-up area always locks it again
-  if (!grownUp) parentUnlocked = false;
 
-  if (grownUp){
+  if (CLIENT === 'adults'){
     S = params.get('k') ? kidById(params.get('k')) : null;
-    if (!parentUnlocked) return parentGate(route);
+    // A brand-new device: connect to the family, or set up from scratch
+    if (!Sync.connected && !F.kids.length && !F.pin && !localOnly && path !== 'gu/sync') return adultsStart();
+    const brandNew = !F.pin && !F.kids.length && path === 'gu/sync';
+    if (!parentUnlocked && !brandNew) return parentGate(route);
     if ((path === 'gu/kid' || path === 'gu/week') && !S){ location.hash = '#/gu'; return; }
-    return routes[path](params);
+    return (routes[grownUp ? path : 'gu'] || family)(params);
   }
-  if (!F.kids.length) return welcome();
+  // Children's app: no grown-up pages at all
+  if (!F.kids.length) return kidsWelcome();
   S = kidById(F.current);
-  if (!S || path === 'who' || !path) return who();
+  if (grownUp || !S || path === 'who' || !path) return who();
   (routes[path] || home)(params);
 }
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => route());
+
+// Grown-ups' app locks again if put away for more than 2 minutes
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+  else if (CLIENT === 'adults' && parentUnlocked && Date.now() - hiddenAt > 120000){ parentUnlocked = false; route(); }
+});
 
 /* ---------- Welcome, who's here, home ---------- */
-function welcome(){
+function kidsWelcome(){
   S = null;
   setTop('Jar Stars', null, 'home', false);
   view(`
     <div class="bigemoji">🫙⭐</div>
     <h1 class="center">Welcome to Jar Stars</h1>
-    <p class="intro center">Jobs, pocket money and saving up, for every child in the family, on one tablet.</p>
+    <p class="intro center">Jobs, pocket money and saving up, for every child in the family.</p>
     <div class="card">
-      <h3>A grown-up sets it up</h3>
-      <p>You'll choose a 4-number PIN, then add each child with their own name, picture and colour. Each child gets their own jobs, jar, savings goals and pet.</p>
-      <a class="btn block" href="#/gu/child">Set up Jar Stars →</a>
+      <h3>A grown-up needs to set this up</h3>
+      <p>Open the <b>sign-in link</b> from the grown-ups' app on this device (Grown-ups → Family sync → Add a device), then type the family password.</p>
+      <p class="muted" style="margin-bottom:0">Not using family sync? Set up children in the <a href="grownups.html">grown-ups' app</a> on this device.</p>
     </div>
   `);
+}
+
+function adultsStart(){
+  S = null;
+  setTop('Jar Stars Grown-ups', null, 'money', false);
+  view(`
+    <div class="bigemoji">🫙⭐</div>
+    <h1 class="center">Jar Stars for grown-ups</h1>
+    <p class="intro center">Check jobs, set pay and look after every child's jar.</p>
+    <div class="card">
+      <h3>📲 Joining your family?</h3>
+      <p style="margin-bottom:0">Open the <b>sign-in link</b> sent from a grown-up's phone on this device, then type the family password.</p>
+    </div>
+    <div class="card">
+      <h3>☁️ First time?</h3>
+      <p>Set up family sync with your private GitHub repo, so you can sign in on every device.</p>
+      <a class="btn block" href="#/gu/sync">Set up family sync</a>
+    </div>
+    <div class="card">
+      <h3>📱 Just this device</h3>
+      <p>Keep everything on this device only. You can turn on family sync later.</p>
+      <button class="btn ghost block" id="local">Use on this device only</button>
+    </div>
+  `);
+  $('#local').onclick = () => { localOnly = true; location.hash = '#/gu/child'; };
 }
 
 function who(){
@@ -158,7 +199,6 @@ function who(){
     <p class="intro center">Tap your picture to open your jar.</p>
     <div class="kids">${F.kids.map(k => { const c = colourOf(k);
       return `<button class="kidtile" data-k="${k.id}" style="--c:${c.c};--cs:${c.soft}"><span class="kt-av">${k.avatar}</span><span class="kt-name">${esc(k.name)}</span></button>`; }).join('')}</div>
-    <a class="small-link" href="#/gu">🔒 Grown-ups</a>
   `);
   $$('.kidtile').forEach(b => b.onclick = () => { F.current = b.dataset.k; save(); location.hash = '#/home'; });
 }
@@ -175,7 +215,6 @@ function home(){
     ${moneyBanner()}
     ${petBanner()}
     <a class="btn ghost block" href="#/who" style="margin-top:6px">👋 Not ${esc(S.name)}? Switch</a>
-    <a class="small-link" href="#/gu">🔒 Grown-ups</a>
   `);
 }
 
@@ -678,7 +717,8 @@ function runAllowance(k){
   const end = new Date(today + 'T12:00');
   const due = [];
   while (d <= end){ if (DAY_KEYS[dayIdx(d)] === a.day) due.push(dkey(d)); d.setDate(d.getDate() + 1); }
-  due.slice(-8).forEach(date => k.money.ledger.unshift({ id: uid(), date, amt: a.amt, note: 'Weekly pocket money' }));
+  due.slice(-8).forEach(date => { const id = `allow-${k.id}-${date}`;
+    if (!k.money.ledger.some(l => l.id === id)) k.money.ledger.unshift({ id, date, amt: a.amt, note: 'Weekly pocket money' }); });
   a.last = today;
   save();
 }
@@ -762,8 +802,7 @@ function earnedTab(){
       return `<div class="club"><span class="ce">${x.e}</span><span style="flex:1;min-width:0"><b>${esc(x.t)}</b><small>${fmtMoney(x.pay)}</small></span>${st}</div>`; }).join('')
       : '<div class="card muted center">No bonus jobs yet. Ask a grown-up to choose some!</div>'}
     <h3 style="margin-top:18px">📒 History</h3>
-    <div class="card">${M().ledger.slice(0, 20).map(l => `<div class="entry"><span style="flex:1;min-width:0"><b>${esc(l.note)}</b><small>${new Date(l.date + 'T12:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })}</small></span><b class="${l.amt < 0 ? 'neg' : 'pos'}">${l.amt > 0 ? '+' : ''}${fmtMoney(l.amt)}</b></div>`).join('') || '<p class="muted" style="margin:0">Nothing yet. Do your jobs and a grown-up will check them.</p>'}</div>
-    <a class="btn ghost block" href="#/gu/kid?k=${S.id}">🔒 Grown-up check</a>`,
+    <div class="card">${M().ledger.slice(0, 20).map(l => `<div class="entry"><span style="flex:1;min-width:0"><b>${esc(l.note)}</b><small>${new Date(l.date + 'T12:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })}</small></span><b class="${l.amt < 0 ? 'neg' : 'pos'}">${l.amt > 0 ? '+' : ''}${fmtMoney(l.amt)}</b></div>`).join('') || '<p class="muted" style="margin:0">Nothing yet. Do your jobs and a grown-up will check them.</p>'}</div>`,
     bind(){
       $$('[data-gig]').forEach(b => b.onclick = () => {
         const x = M().gigs.find(g => g.id === b.dataset.gig);
@@ -872,8 +911,10 @@ function wishTab(){
 /* ---------- Grown-ups ---------- */
 // Family page: every child at a glance, plus shared settings
 function family(){
-  setTop('Grown-ups', '#/who', 'money', false);
+  setTop('Grown-ups', null, 'money', false);
+  const st = { ok:'✓ Up to date', saving:'🔄 Saving…', offline:'⚠️ No internet. Will save when back online', error:'⚠️ Can\'t reach the family data. Check the token' }[Sync.status] || '';
   view(`
+    ${waitingAll() ? `<div class="card soft"><p style="margin:0"><b>${waitingAll()} thing${waitingAll() === 1 ? '' : 's'} to check.</b> Tap a child below.</p></div>` : ''}
     <div class="card soft"><p style="margin:0">Tap a child to check their jobs and set their pay. Children only ever see their own jar.</p></div>
     ${F.kids.map(k => withKid(k, () => { const c = colourOf(k), w = waitingCount(), a = k.money.allow;
       const pay = [k.money.rate ? `${fmtMoney(k.money.rate)} a job` : '', a.amt ? `${fmtMoney(a.amt)} a week` : ''].filter(Boolean).join(' · ') || 'No pay set yet';
@@ -894,28 +935,37 @@ function family(){
         <li>Each child has their own pay, so older children can earn more per job or have a bigger weekly amount.</li>
         <li>Some families keep everyday jobs unpaid as "family jobs" and only pay for bonus jobs. Set a child's daily jobs to "Nothing" to do that.</li>
         <li>The wish list asks children to wait a week before buying, which helps them tell wants from must-haves.</li>
-        <li>Everything is saved only on this device. Clearing the browser's data removes it.</li>
+        <li>${Sync.connected ? 'Family sync is on, so changes appear on every signed-in device.' : 'Everything is saved only on this device. Turn on family sync to use other devices.'}</li>
       </ul>
+    </div>
+    <div class="card">
+      <h3>☁️ Family sync</h3>
+      ${Sync.connected ? `<p>On · <b>${esc(Sync.repo)}</b><br><small class="muted">${st}</small></p>
+        <a class="btn block" href="#/gu/devices">📲 Add a device</a>
+        <button class="btn ghost block" id="syncnow" style="margin-top:10px">🔄 Check for changes now</button>`
+      : `<p>Off. Everything is only on this device.</p><a class="btn block" href="#/gu/sync">Set up family sync</a>`}
     </div>
     <div class="card">
       <h3>🔒 PIN</h3>
       <button class="btn ghost block" id="newpin">Change PIN</button>
-      <a class="btn block" href="#/who" style="margin-top:10px">Lock and go to children</a>
+      <button class="btn block" id="lockup" style="margin-top:10px">Lock</button>
+      <a class="small-link" href="index.html">Open the children's app</a>
     </div>
     <div class="card gu">
       <h3>Reset</h3>
-      <p>Removes every child, their jobs, money records and pets from this device.</p>
+      <p>Removes every child, their jobs, money records and pets${Sync.connected ? ' from <b>every device</b> in the family' : ' from this device'}.</p>
       <button class="btn ghost block" id="reset">Reset everything</button>
     </div>
   `);
   $('#cur').onchange = e => { F.cur = e.target.value; save(); family(); };
   $('#newpin').onclick = () => { F.pin = ''; save(); parentUnlocked = false; route(); };
+  $('#lockup').onclick = () => { parentUnlocked = false; route(); };
+  if ($('#syncnow')) $('#syncnow').onclick = async () => { await Sync.pull(true); toast(Sync.status === 'ok' ? 'Up to date ✓' : 'Couldn\'t reach the family data'); family(); };
   $('#reset').onclick = e => {
     const b = e.currentTarget;
     if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = 'Tap again to delete everything'; return; }
-    try { localStorage.removeItem(KEY); } catch(err){}
-    F = { pin:'', cur:'£', kids:[], current:null }; S = null; parentUnlocked = false;
-    location.hash = '#/welcome'; route();
+    Sync.patch(F, { pin:'', cur:'£', kids:[] }); F.current = null; S = null; parentUnlocked = false;
+    save(); location.hash = '#/gu'; route();
   };
 }
 
@@ -1152,7 +1202,7 @@ function moneyParent(params){
 
 function parentGate(next){
   const setting = !F.pin;
-  setTop('Grown-ups', F.kids.length ? '#/who' : '#/welcome', 'money', false);
+  setTop('Grown-ups', null, 'money', false);
   view(`
     <div class="bigemoji">🔒</div>
     <h2 class="center">${setting ? 'Choose a grown-up PIN' : 'Grown-ups only'}</h2>
@@ -1179,5 +1229,149 @@ function parentGate(next){
   };
 }
 
+/* ---------- Family sync screens ---------- */
+const waitingAll = () => F.kids.reduce((t, k) => t + withKid(k, waitingCount), 0);
+const SYNC_ERRORS = {
+  'bad-token': 'GitHub didn\'t accept that token. Check you copied all of it.',
+  'no-repo': 'Can\'t find that repo with this token. Check the name, and that the token is allowed to use that repo.',
+  'public-repo': 'That repo is public, so anyone could read the family data. Make it private first.',
+  'offline': 'Can\'t reach GitHub. Check the internet connection.',
+  'wrong-password': 'That family password isn\'t right.',
+  'bad-link': 'That sign-in link isn\'t complete. Copy the whole link again.'
+};
+const syncErr = e => SYNC_ERRORS[e.message] || ('Something went wrong (' + e.message + '). Try again.');
+
+// First-time set-up: repo + token + family password
+function syncSetup(){
+  setTop('Family sync', F.kids.length || F.pin ? '#/gu' : null, 'money', false);
+  view(`
+    <div class="card soft"><p style="margin:0">Family data will be kept in a <b>private</b> GitHub repo. Each device signs in with a link and your family password.</p></div>
+    <div class="card">
+      <label class="lbl" for="repo" style="margin-top:0">Private repo</label>
+      <input id="repo" placeholder="e.g. cjs1218/jar-stars-data" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="lbl" for="tok">GitHub token</label>
+      <input id="tok" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+      <p class="muted" style="margin:6px 0 0;font-size:15px">A fine-grained token for just that repo, with <b>Contents: Read and write</b>.</p>
+      <label class="lbl" for="pw1">Choose a family password</label>
+      <input id="pw1" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+      <label class="lbl" for="pw2">Type it again</label>
+      <input id="pw2" type="password" autocomplete="new-password">
+      <p class="muted" style="margin:6px 0 0;font-size:15px">You'll type this once on each new device. Don't share it with the children.</p>
+    </div>
+    <div id="msg"></div>
+    <button class="btn block" id="go">Connect</button>
+  `);
+  $('#go').onclick = async () => {
+    const repo = $('#repo').value.trim().replace(/^https?:\/\/github.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+    const cfg = { repo, token: $('#tok').value.trim(), path: 'family.json' };
+    const pw = $('#pw1').value;
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast('Type the repo as owner/name'); return; }
+    if (!cfg.token){ toast('Paste the token first'); return; }
+    if (pw.length < 8){ toast('Use at least 8 characters for the password'); return; }
+    if (pw !== $('#pw2').value){ toast('The two passwords don\'t match'); return; }
+    const b = $('#go'); b.disabled = true; b.textContent = 'Checking…';
+    try {
+      const remote = await Sync.peek(cfg);
+      const finish = async mode => {
+        b.textContent = 'Connecting…';
+        await Sync.connect(cfg, mode);
+        F.kids.forEach(fixKid); saveLocal();
+        Sync.setLink(await Sync.lock(cfg, pw));
+        parentUnlocked = !!F.pin && parentUnlocked;
+        toast('Family sync is on ☁️');
+        location.hash = '#/gu/devices';
+      };
+      const mine = F.kids.length > 0;
+      if (remote.data && mine && JSON.stringify(remote.data) !== JSON.stringify(shared())){
+        const n = (remote.data.kids || []).length;
+        $('#msg').innerHTML = `<div class="card"><h3>There's already family data in that repo</h3>
+          <p>Online: ${n} child${n === 1 ? '' : 'ren'}. This device: ${F.kids.length} child${F.kids.length === 1 ? '' : 'ren'}.</p>
+          <button class="btn block" id="useon">Use the data that's online</button>
+          <button class="btn ghost block" id="useme" style="margin-top:10px">Replace it with this device's data</button></div>`;
+        b.hidden = true;
+        $('#useon').onclick = () => finish('remote').catch(e => toast(syncErr(e)));
+        $('#useme').onclick = e => { const x = e.currentTarget; if (!x.dataset.sure){ x.dataset.sure = 1; x.textContent = 'Tap again to replace what\'s online'; return; } finish('upload').catch(err => toast(syncErr(err))); };
+        return;
+      }
+      await finish(remote.data ? 'remote' : 'upload');
+    } catch(e){
+      $('#msg').innerHTML = `<div class="card soft"><p style="margin:0">⚠️ ${esc(syncErr(e))}</p></div>`;
+      b.disabled = false; b.textContent = 'Connect';
+    }
+  };
+}
+
+// Sign-in links for new devices
+function devices(){
+  setTop('Add a device', '#/gu', 'money', false);
+  if (!Sync.connected || !Sync.link){ location.hash = '#/gu/sync'; return; }
+  const base = p => new URL(p, location.href.split('#')[0]).href.split('#')[0];
+  const links = [
+    { id:'kids', e:'🧒', name:'Children\'s tablet', url: base('index.html') + '#join=' + Sync.link, help:'Open this on the children\'s tablet.' },
+    { id:'adults', e:'🧑', name:'Grown-up\'s phone', url: base('grownups.html') + '#join=' + Sync.link, help:'Open this on another grown-up\'s phone.' }
+  ];
+  view(`
+    <div class="card soft"><p style="margin:0">Send one of these links to the new device (by message or email), open it there and type the <b>family password</b>. The link is no use without the password.</p></div>
+    ${links.map(l => `<div class="card">
+      <h3>${l.e} ${l.name}</h3>
+      <p class="muted" style="margin-top:-4px">${l.help}</p>
+      <div class="row">${navigator.share ? `<button class="btn" data-share="${l.id}">Share</button>` : ''}<button class="btn ghost" data-copy="${l.id}">Copy link</button></div>
+    </div>`).join('')}
+    <div class="card gu">
+      <h3>This device</h3>
+      <p>Signed in to <b>${esc(Sync.repo)}</b>.</p>
+      <button class="btn ghost block" id="disc">Sign this device out</button>
+      <p class="muted" style="margin:10px 0 0;font-size:15px">To stop every old link working, make a new GitHub token, delete the old one, and set up family sync again.</p>
+    </div>
+    <a class="btn block" href="#/gu">Done</a>
+  `);
+  const L = id => links.find(l => l.id === id);
+  $$('[data-copy]').forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(L(b.dataset.copy).url); toast('Link copied'); }
+    catch(e){ prompt('Copy this link:', L(b.dataset.copy).url); }
+  });
+  $$('[data-share]').forEach(b => b.onclick = () => navigator.share({ title:'Jar Stars sign-in', text:'Sign in to Jar Stars', url: L(b.dataset.share).url }).catch(() => {}));
+  $('#disc').onclick = e => {
+    const b = e.currentTarget;
+    if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = 'Tap again to sign out'; return; }
+    Sync.disconnect(); toast('Signed out. The family data stays online.'); location.hash = '#/gu';
+  };
+}
+
+// Opening a sign-in link on a new device
+function joinScreen(blob){
+  S = null;
+  setTop(CLIENT === 'adults' ? 'Jar Stars Grown-ups' : 'Jar Stars', null, CLIENT === 'adults' ? 'money' : 'home', false);
+  view(`
+    <div class="bigemoji">🔑</div>
+    <h2 class="center">Connect this ${CLIENT === 'adults' ? 'phone' : 'tablet'} to your family</h2>
+    <p class="intro center">${CLIENT === 'adults' ? 'Type the family password.' : 'A grown-up types the family password.'}</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Family password">
+    <button class="btn block" id="go" style="margin-top:12px">Connect</button>
+    <div id="msg"></div>
+  `);
+  const go = async () => {
+    const b = $('#go'); b.disabled = true; b.textContent = 'Connecting…';
+    try {
+      const cfg = await Sync.unlock(blob, $('#pw').value);
+      await Sync.connect(cfg, 'remote');
+      Sync.setLink(blob);
+      F.kids.forEach(fixKid); F.current = null; saveLocal();
+      history.replaceState(null, '', location.pathname + (CLIENT === 'adults' ? '#/gu' : '#/who'));
+      toast('Connected ☁️'); parentUnlocked = false; route();
+    } catch(e){
+      $('#msg').innerHTML = `<div class="card soft" style="margin-top:12px"><p style="margin:0">⚠️ ${esc(syncErr(e))}</p></div>`;
+      b.disabled = false; b.textContent = 'Connect';
+    }
+  };
+  $('#go').onclick = go;
+  $('#pw').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
 /* ---------- Start ---------- */
+Sync.init({
+  get: shared,
+  apply: data => { const cur = F.current; Sync.patch(F, data); F.current = cur; F.kids.forEach(fixKid); saveLocal(); },
+  redraw: () => { if (location.hash.startsWith('#join=')) return; S = null; const y = scrollY; route(true); scrollTo(0, y); updateStars(); }
+});
 route();

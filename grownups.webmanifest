@@ -1,0 +1,10 @@
+{
+  "name": "Jar Stars Grown-ups",
+  "short_name": "Jar Grown-ups",
+  "description": "Check jobs, set pay and look after every child's jar.",
+  "start_url": "./grownups.html",
+  "display": "standalone",
+  "background_color": "#f6f8ff",
+  "theme_color": "#f6f8ff",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

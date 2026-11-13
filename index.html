@@ -20,11 +20,14 @@
     <button id="back" class="back" aria-label="Back" hidden>←</button>
     <div id="title" class="title"></div>
     <a id="starbox" class="stars" href="#/pet" aria-label="My stars and pet" hidden>⭐ <span id="starcount">0</span></a>
+    <span id="sync" class="syncdot" hidden></span>
     <a id="who" class="whobtn" href="#/who" aria-label="Switch to someone else" hidden></a>
   </header>
   <main id="app"></main>
   <div id="toast" role="status" aria-live="polite"></div>
+  <script>window.CLIENT = 'kids';</script>
   <script src="content.js"></script>
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -322,3 +322,5 @@ label.lbl{display:block;font-weight:800;margin:14px 0 6px}
 @keyframes wiggle{0%,100%{rotate:-2deg}50%{rotate:2deg}}
 @media (prefers-reduced-motion: reduce){.room.moving .it{animation:none}}
 .seart svg{width:52px;height:52px}
+
+.syncdot{font-size:20px;line-height:1;flex:none;cursor:default}
