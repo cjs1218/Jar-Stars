@@ -24,7 +24,7 @@ No accounts, no messaging, no tracking. Everything is saved only in the browser 
 - **Pay:** each child has their own weekly pocket money (paid automatically on the day you choose), pay per daily job and an all-done bonus, so older children can earn more
 - **Bonus jobs:** choose from 61 ideas or add your own, set the price and picture, and copy them to the other children
 - **Their week:** set up their jobs (tap a job's picture to change it), clubs and packing list, and choose whether they can change it themselves
-- **Money in and out:** record money paid out or added
+- **Take money out:** move money to their savings account, tick off a goal or wish you bought for them (taking all or part of the cost from the jar), or record cash paid out. Add money for gifts, and undo any entry by mistake
 - **Family settings:** currency (£, €, $), change PIN, add or remove children, reset everything
 
 ## Run it

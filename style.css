@@ -302,3 +302,11 @@ label.lbl{display:block;font-weight:800;margin:14px 0 6px}
 .petwrap{z-index:2}
 .petwrap.sitting{font-size:clamp(62px,20vw,90px);font-size:22cqw}
 .homelabel{z-index:3;bottom:auto;top:8px;left:8px}
+
+/* Grown-up: taking money out */
+.outkinds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.okind{border:2px solid var(--line);background:#fff;border-radius:16px;padding:10px 6px;font:700 14px 'Nunito',sans-serif;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:72px}
+.okind span{font-size:26px;line-height:1}
+.okind.on{border-color:var(--accent);background:var(--accent-soft)}
+.buyrow .payin{width:84px}
+.entry .ldel{margin-left:8px}

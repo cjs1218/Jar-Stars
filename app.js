@@ -611,7 +611,14 @@ function fmtMoney(x){
 }
 const rvOf = key => { const r = M().reviewed[key]; return r && typeof r === 'object' ? r : { paid: [], bonus: false }; };
 const balance = () => M().ledger.reduce((t, l) => t + l.amt, 0);
-const addLedger = (amt, note, date = dkey()) => M().ledger.unshift({ id: uid(), date, amt: Math.round(amt * 100) / 100, note });
+const addLedger = (amt, note, date = dkey(), kind) => M().ledger.unshift({ id: uid(), date, amt: Math.round(amt * 100) / 100, note, ...(kind ? { kind } : {}) });
+// Ways a grown-up can take money out of a jar
+const OUT_KINDS = [
+  { id:'bank',   e:'🏦', name:'Savings account', note:'Moved to my savings account' },
+  { id:'bought', e:'🎁', name:'Bought something', note:'Bought for me' },
+  { id:'cash',   e:'💷', name:'Paid in cash',     note:'Paid out in cash' }
+];
+const inBank = () => Math.round(M().ledger.filter(l => l.kind === 'bank').reduce((t, l) => t - l.amt, 0) * 100) / 100;
 
 // Weekly pocket money: pay any paydays since we last looked (up to 8 weeks back)
 function runAllowance(k){
@@ -693,6 +700,7 @@ function earnedTab(){
       <div><b>${fmtMoney(sumSince(30))}</b><small>this month</small></div>
       <div><b>${fmtMoney(ever)}</b><small>ever</small></div>
     </div>
+    ${inBank() > 0 ? `<div class="card soft">🏦 In my savings account: <b>${fmtMoney(inBank())}</b> (kept safe by a grown-up)</div>` : ''}
     ${a.amt ? `<div class="card soft">📅 Pocket money day: <b>${DAY_LONG[DAY_KEYS.indexOf(a.day)]}</b> · ${fmtMoney(a.amt)} a week</div>` : ''}
     ${M().rate ? `<div class="card soft">✅ Each daily job: <b>${fmtMoney(M().rate)}</b>${M().dayBonus ? ` · all done in a day: <b>+${fmtMoney(M().dayBonus)}</b>` : ''}</div>` : ''}
     ${waiting ? `<div class="card soft">⏳ ${waiting} job${waiting === 1 ? '' : 's'} waiting for a grown-up to check</div>` : ''}
@@ -965,11 +973,35 @@ function moneyParent(params){
           ${chosen.has(g.t) ? '<span class="tagp ok">Added</span>' : `<button class="addgig" data-ci="${ci}" data-gi="${gi}" aria-label="Add">+</button>`}</div>`).join('')}`).join('')}
       </div>
 
+      <div class="card" id="outcard">
+        <h3>📤 Take money out of ${nm}'s jar</h3>
+        <p class="muted" style="margin-top:-4px">In the jar: <b>${fmtMoney(balance())}</b>${inBank() > 0 ? ` · moved to savings account so far: <b>${fmtMoney(inBank())}</b>` : ''}</p>
+        ${M().goals.length || M().wishes.length ? `<p class="grp">Bought one of ${nm}'s goals or wishes</p>
+          ${[...M().goals.map(g => ({ t:'g', id:g.id, e:g.e, name:g.name, price:g.amt, extra:`${fmtMoney(g.saved)} saved` })),
+             ...M().wishes.map(w => ({ t:'w', id:w.id, e:w.e, name:w.name, price:w.price, extra:'wish list' }))].map(x => {
+            const take = Math.min(x.price, Math.max(0, balance()));
+            return `<div class="erow buyrow" data-t="${x.t}" data-id="${x.id}" style="align-items:center"><span style="flex:1;min-width:0">${x.e} <b>${esc(x.name)}</b><br><small class="muted">${fmtMoney(x.price)} · ${x.extra}</small></span>
+              <input class="payin" type="number" inputmode="decimal" min="0" step="0.05" value="${take.toFixed(2)}" aria-label="Amount to take from the jar">
+              <button class="buy gbought" style="width:auto">Bought</button></div>`; }).join('')}
+          <p class="muted" style="margin:6px 0 12px;font-size:15px">Change the amount if you paid part of it yourself. The item is then ticked off ${nm}'s list.</p>` : ''}
+        <p class="grp">Other money out</p>
+        <div class="outkinds">${OUT_KINDS.map((k, i) => `<button class="okind ${i === 0 ? 'on' : ''}" data-kind="${k.id}"><span>${k.e}</span>${k.name}</button>`).join('')}</div>
+        <div class="row" style="margin-top:10px"><input id="adjamt" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="1.00" aria-label="Amount"><button class="btn ghost" id="adjall" style="flex:none;min-height:48px;padding:8px 14px">All of it</button></div>
+        <input id="adjnote" maxlength="40" placeholder="Note (optional)" style="margin-top:10px">
+        <button class="btn block" id="adjout" style="margin-top:10px">Take out</button>
+      </div>
+
       <div class="card">
-        <h3>📒 Money in and out</h3>
-        <p class="muted" style="margin-top:-4px">${nm}'s jar: <b>${fmtMoney(balance())}</b></p>
-        <div class="row"><input id="adjamt" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="1.00" aria-label="Amount"><input id="adjnote" maxlength="40" placeholder="What for?" style="flex:1;min-width:0"></div>
-        <div class="row" style="margin-top:10px"><button class="btn ghost" id="adjout">− Paid out / spent</button><button class="btn" id="adjin">+ Add money</button></div>
+        <h3>➕ Add money</h3>
+        <p class="muted" style="margin-top:-4px">Birthday money, a gift, or a top-up.</p>
+        <div class="row"><input id="addamt" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="5.00" aria-label="Amount"><input id="addnote" maxlength="40" placeholder="e.g. Birthday money from Gran" style="flex:1;min-width:0"></div>
+        <button class="btn block" id="adjin" style="margin-top:10px">Add to the jar</button>
+      </div>
+
+      <div class="card">
+        <h3>📒 Recent money in and out</h3>
+        ${M().ledger.slice(0, 10).map(l => `<div class="entry"><span style="flex:1;min-width:0"><b>${esc(l.note)}</b><small>${new Date(l.date + 'T12:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })}</small></span><b class="${l.amt < 0 ? 'neg' : 'pos'}">${l.amt > 0 ? '+' : ''}${fmtMoney(l.amt)}</b><button class="del ldel" data-l="${l.id}" aria-label="Undo this">✕</button></div>`).join('') || '<p class="muted" style="margin:0">Nothing yet.</p>'}
+        ${M().ledger.length ? '<p class="muted" style="margin:8px 0 0;font-size:15px">Made a mistake? Tap ✕ twice to undo an entry.</p>' : ''}
       </div>
       <a class="btn ghost block" href="#/gu">← All children</a>
     `);
@@ -1036,13 +1068,36 @@ function moneyParent(params){
       if (!t){ toast('Type the job first'); return; }
       M().gigs.push({ id: uid(), e:'⭐', t, pay: Math.round(v * 100) / 100 }); chosen.add(t); save(); draw();
     };
-    const adj = sign => {
-      const v = Math.abs(+$('#adjamt').value || 0), note = $('#adjnote').value.trim();
+    const keep = () => { const y = scrollY; draw(); scrollTo(0, y); };
+    const r2 = v => Math.round(Math.abs(+v || 0) * 100) / 100;
+    let kind = OUT_KINDS[0];
+    $$('.okind').forEach(b => b.onclick = () => { kind = OUT_KINDS.find(k => k.id === b.dataset.kind); $$('.okind').forEach(x => x.classList.toggle('on', x === b)); });
+    $('#adjall').onclick = () => { $('#adjamt').value = Math.max(0, balance()).toFixed(2); };
+    $('#adjout').onclick = () => {
+      const v = r2($('#adjamt').value), note = $('#adjnote').value.trim();
       if (!v){ toast('Type an amount first'); return; }
-      addLedger(sign * v, note || (sign > 0 ? 'Money added' : 'Paid out')); fixGoals(); save(); toast('Saved'); draw();
+      if (v > balance() + 0.001){ toast(`There's only ${fmtMoney(balance())} in the jar`); return; }
+      addLedger(-v, note || kind.note, dkey(), kind.id); fixGoals(); save();
+      toast(kind.id === 'bank' ? `${fmtMoney(v)} moved to ${S.name}'s savings account 🏦` : `${fmtMoney(v)} taken out`); keep();
     };
-    $('#adjin').onclick = () => adj(1);
-    $('#adjout').onclick = () => adj(-1);
+    $$('.gbought').forEach(b => b.onclick = () => {
+      const row = b.closest('.buyrow'), v = r2($('input', row).value);
+      if (v > balance() + 0.001){ toast(`There's only ${fmtMoney(balance())} in the jar`); return; }
+      if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = v ? `Take ${fmtMoney(v)}?` : 'Tick off?'; return; }
+      const list = row.dataset.t === 'g' ? 'goals' : 'wishes', item = M()[list].find(x => x.id === row.dataset.id);
+      M()[list] = M()[list].filter(x => x !== item);
+      if (v) addLedger(-v, `Bought: ${item.name}`, dkey(), 'bought');
+      fixGoals(); save(); toast(`${item.e} ${item.name} ticked off 🎉`); keep();
+    });
+    $('#adjin').onclick = () => {
+      const v = r2($('#addamt').value), note = $('#addnote').value.trim();
+      if (!v){ toast('Type an amount first'); return; }
+      addLedger(v, note || 'Money added', dkey(), 'add'); save(); toast(`${fmtMoney(v)} added 🫙`); keep();
+    };
+    $$('.ldel').forEach(b => b.onclick = () => {
+      if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = '?'; toast('Tap ✕ again to undo this entry'); return; }
+      M().ledger = M().ledger.filter(l => l.id !== b.dataset.l); fixGoals(); save(); toast('Undone'); keep();
+    });
   };
   draw();
 }
