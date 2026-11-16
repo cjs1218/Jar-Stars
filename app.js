@@ -923,6 +923,7 @@ function family(){
         <span class="fr-main"><b>${esc(k.name)}</b><small>${pay}</small></span>
         <span class="fr-side"><b>${fmtMoney(balance())}</b>${w ? `<span class="tagp wait">${w} to check</span>` : '<small>All checked</small>'}</span>
       </a>`; })).join('') || '<div class="card muted center">No children yet. Add one below.</div>'}
+    ${F.kids.length ? `<p class="grp" style="margin-top:4px">➕ Add money</p><div class="row" style="flex-wrap:wrap;margin-bottom:12px">${F.kids.map(k => `<a class="btn ghost" href="#/gu/kid?k=${k.id}&add=1" style="flex:1 1 40%">${k.avatar} ${esc(k.name)}</a>`).join('')}</div>` : ''}
     <a class="btn block" href="#/gu/child">+ Add a child</a>
 
     <div class="card" style="margin-top:16px">
@@ -1011,6 +1012,7 @@ function childForm(params){
 function moneyParent(params){
   setTop(S.name, '#/gu', 'money', false);
   const isNew = params && params.get('new');
+  if (params && params.get('add')) later(() => { const c = document.getElementById('addcard'); if (c){ c.scrollIntoView({ block: 'start' }); $('#addamt').focus({ preventScroll: true }); } }, 50);
   const payOpts = (sel, steps = PAY_STEPS) => steps.map(v => `<option value="${v}" ${Math.abs(v - sel) < 0.001 ? 'selected' : ''}>${v ? fmtMoney(v) : 'Nothing'}</option>`).join('');
   const chosen = new Set(M().gigs.map(g => g.t));
   const nm = esc(S.name);
@@ -1019,6 +1021,7 @@ function moneyParent(params){
     const days = daysToCheck(), a = M().allow, c = colourOf(S);
     view(`
       <div class="kidhead" style="--c:${c.c};--cs:${c.soft}"><span class="fr-av">${S.avatar}</span><span style="flex:1;min-width:0"><b>${nm}</b><small>Jar: ${fmtMoney(balance())}</small></span><a class="btn ghost" href="#/gu/child?k=${S.id}" style="min-height:44px;padding:8px 14px;font-size:15px">✏️ Edit</a></div>
+      <div class="row" style="margin-bottom:14px"><button class="btn" data-jump="addcard">➕ Add money</button><button class="btn ghost" data-jump="outcard">📤 Take money out</button></div>
       ${isNew ? `<div class="card soft"><p style="margin:0"><b>${nm} is set up.</b> Choose their pay below, and look at their week. Then add any brothers or sisters from the Grown-ups page.</p></div>` : ''}
       ${days.length ? `<div class="card soft"><p style="margin:0">Check what ${nm} has ticked off. Untick anything that wasn't really done, then tap <b>Approve</b> to add it to their jar.</p></div>` : ''}
       ${days.map(x => {
@@ -1071,6 +1074,14 @@ function moneyParent(params){
           ${chosen.has(g.t) ? '<span class="tagp ok">Added</span>' : `<button class="addgig" data-ci="${ci}" data-gi="${gi}" aria-label="Add">+</button>`}</div>`).join('')}`).join('')}
       </div>
 
+      <div class="card" id="addcard">
+        <h3>➕ Add money to ${nm}'s jar</h3>
+        <div class="quick">${[1, 2, 5, 10, 20].map(v => `<button class="qamt addq" data-v="${v}">${fmtMoney(v)}</button>`).join('')}</div>
+        <div class="row" style="margin-top:10px"><input id="addamt" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="Other" aria-label="Amount" style="flex:1;min-width:0;width:auto"></div>
+        <div class="examples" style="margin-top:8px">${['Birthday money', 'Christmas money', 'Gift', 'Tooth fairy', 'Top-up'].map(t => `<button class="addr">${t}</button>`).join('')}</div>
+        <input id="addnote" maxlength="40" placeholder="What's it for? e.g. Birthday money from Gran" style="margin-top:8px">
+        <button class="btn block" id="adjin" style="margin-top:10px">Add to the jar</button>
+      </div>
       <div class="card" id="outcard">
         <h3>📤 Take money out of ${nm}'s jar</h3>
         <p class="muted" style="margin-top:-4px">In the jar: <b>${fmtMoney(balance())}</b>${inBank() > 0 ? ` · moved to savings account so far: <b>${fmtMoney(inBank())}</b>` : ''}</p>
@@ -1089,12 +1100,6 @@ function moneyParent(params){
         <button class="btn block" id="adjout" style="margin-top:10px">Take out</button>
       </div>
 
-      <div class="card">
-        <h3>➕ Add money</h3>
-        <p class="muted" style="margin-top:-4px">Birthday money, a gift, or a top-up.</p>
-        <div class="row"><input id="addamt" class="payin" type="number" inputmode="decimal" min="0" step="0.05" placeholder="5.00" aria-label="Amount"><input id="addnote" maxlength="40" placeholder="e.g. Birthday money from Gran" style="flex:1;min-width:0"></div>
-        <button class="btn block" id="adjin" style="margin-top:10px">Add to the jar</button>
-      </div>
 
       <div class="card">
         <h3>📒 Recent money in and out</h3>
@@ -1187,10 +1192,14 @@ function moneyParent(params){
       if (v) addLedger(-v, `Bought: ${item.name}`, dkey(), 'bought');
       fixGoals(); save(); toast(`${item.e} ${item.name} ticked off 🎉`); keep();
     });
+    $$('[data-jump]').forEach(b => b.onclick = () => document.getElementById(b.dataset.jump).scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }));
+    $$('.addq').forEach(b => b.onclick = () => { $('#addamt').value = (+b.dataset.v).toFixed(2); $$('.addq').forEach(x => x.classList.toggle('on', x === b)); });
+    $('#addamt').oninput = () => $$('.addq').forEach(x => x.classList.remove('on'));
+    $$('.addr').forEach(b => b.onclick = () => { $('#addnote').value = b.textContent; });
     $('#adjin').onclick = () => {
       const v = r2($('#addamt').value), note = $('#addnote').value.trim();
       if (!v){ toast('Type an amount first'); return; }
-      addLedger(v, note || 'Money added', dkey(), 'add'); save(); toast(`${fmtMoney(v)} added 🫙`); keep();
+      addLedger(v, note || 'Money added', dkey(), 'add'); save(); toast(`${fmtMoney(v)} added to ${S.name}'s jar 🫙`); keep();
     };
     $$('.ldel').forEach(b => b.onclick = () => {
       if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = '?'; toast('Tap ✕ again to undo this entry'); return; }
